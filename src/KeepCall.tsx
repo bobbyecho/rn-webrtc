@@ -6,6 +6,7 @@ import {
   View,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import RNCallKeep from 'react-native-callkeep';
 
@@ -49,6 +50,7 @@ RNCallKeep.setup({
     alertDescription: 'This application needs to access your phone accounts',
     cancelButton: 'Cancel',
     okButton: 'ok',
+    selfManaged: true,
   },
 });
 
@@ -212,9 +214,25 @@ export default function App() {
     log(`[updateDisplay: ${number}] ${format(callUUID)}`);
   };
 
+  const handleUI = ({handle, callUUID, name}) => {
+    Alert.alert('ANGKAT GA?', 'ada telfon nih', [
+      {
+        text: 'Tolak',
+        onPress: () => endCall(callUUID),
+        style: 'cancel',
+      },
+      {
+        text: 'Terima',
+        onPress: () => answerCall(callUUID),
+        style: 'cancel',
+      },
+    ]);
+  };
+
   useEffect(() => {
     RNCallKeep.addEventListener('answerCall', answerCall);
     RNCallKeep.addEventListener('didPerformDTMFAction', didPerformDTMFAction);
+    RNCallKeep.addEventListener('showIncomingCallUi', handleUI);
     RNCallKeep.addEventListener(
       'didReceiveStartCallAction',
       didReceiveStartCallAction,
@@ -248,16 +266,9 @@ export default function App() {
         didToggleHoldCallAction,
       );
       RNCallKeep.removeEventListener('endCall', endCall);
+      RNCallKeep.removeEventListener('showIncomingCallUi', handleUI);
     };
   }, []);
-
-  if (isIOS && DeviceInfo.isEmulator()) {
-    return (
-      <Text style={styles.container}>
-        CallKeep doesn't work on iOS emulator
-      </Text>
-    );
-  }
 
   return (
     <View style={styles.container}>
