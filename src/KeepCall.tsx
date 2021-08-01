@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import RNCallKeep from 'react-native-callkeep';
+import RtcEngine from 'react-native-agora';
 
 const config = require('../agora.config.json');
 
@@ -67,10 +68,29 @@ export default function App() {
   const [heldCalls, setHeldCalls] = useState({}); // callKeep uuid: held
   const [mutedCalls, setMutedCalls] = useState({}); // callKeep uuid: muted
   const [calls, setCalls] = useState({}); // callKeep uuid: number
+  const agoraRef = React.useRef(null);
 
   const log = text => {
     console.info(text);
     setLog(logText + '\n' + text);
+  };
+
+  const initAgora = async () => {
+    agoraRef.current = await RtcEngine.create(config.appId);
+    await agoraRef.current?.enableAudio();
+    await agoraRef?.current?.leaveChannel();
+
+    // If Local user joins RTC channel
+    agoraRef.current?.addListener(
+      'JoinChannelSuccess',
+      (channel, uid, elapsed) => {
+        console.log(uid, elapsed);
+        if (uid !== config.uid) {
+          displayIncomingCall(uid);
+        }
+        // Set state variable to true
+      },
+    );
   };
 
   const addCall = (callUUID, number) => {
@@ -104,7 +124,7 @@ export default function App() {
   };
 
   const displayIncomingCallNow = () => {
-    displayIncomingCall(getRandomNumber());
+    displayIncomingCall('0987654321');
   };
 
   const displayIncomingCallDelayed = () => {
@@ -181,6 +201,16 @@ export default function App() {
     removeCall(callUUID);
   };
 
+  const callSomeone = async () => {
+    console.log('helo');
+    await agoraRef.current?.joinChannel(
+      config.token,
+      config.channelId,
+      null,
+      0,
+    );
+  };
+
   const hangup = callUUID => {
     RNCallKeep.endCall(callUUID);
     removeCall(callUUID);
@@ -218,7 +248,7 @@ export default function App() {
     Alert.alert('ANGKAT GA?', 'ada telfon nih', [
       {
         text: 'Tolak',
-        onPress: () => endCall(callUUID),
+        onPress: () => hangup(callUUID),
         style: 'cancel',
       },
       {
@@ -230,6 +260,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    initAgora();
     RNCallKeep.addEventListener('answerCall', answerCall);
     RNCallKeep.addEventListener('didPerformDTMFAction', didPerformDTMFAction);
     RNCallKeep.addEventListener('showIncomingCallUi', handleUI);
@@ -273,7 +304,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        onPress={displayIncomingCallNow}
+        onPress={callSomeone}
         style={styles.button}
         hitSlop={hitSlop}>
         <Text>Display incoming call now</Text>

@@ -109,8 +109,8 @@ export default class App extends Component<Props, State> {
     await this._engine?.joinChannel(
       this.state.token,
       this.state.channelName,
-      null,
-      0,
+      'Bobby',
+      config.uid,
     );
   };
 
